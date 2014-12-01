@@ -1,0 +1,77 @@
+body, html {
+  height: 100%;
+  width: 100%;
+  min-height: 300px;
+  margin: 0;
+  padding: 0;
+  position: absolute;
+  background-color: #eee;
+  overflow: hidden;
+}
+.requires {
+  font-family: monospace;
+  border: 0;
+  outline: 0;
+  margin: 0;
+  padding: 4px 10px;
+  width: 100%;
+  line-height: 12px;
+  font-size: 12px;
+  background-color: #eee;
+}
+#render, .CodeMirror {  
+  box-sizing: border-box;
+  width: calc(50% - 10px);  
+  height: calc(70% - 40px);
+  margin: 5px; 
+  float: left;
+  background-color: #fff;
+  box-shadow: 0 0 10px black;
+  border-radius: 4px;
+}
+#render {
+  padding: 10px;
+  overflow: auto;
+}
+#log {
+  font-family: monospace;
+  display: block;
+  box-sizing: border-box;
+  clear: both;
+  padding: 5px;
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: #fff;
+  height: calc(30% - 5px);
+  border-top: 1px solid #aaa;
+  z-index: 9999;
+  overflow-y: scroll;
+}
+#log pre {
+  margin: 0;
+}
+.fork {
+  position: absolute;
+  top: 0; right: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  z-index: 1000001;
+}
+@media (max-width: 400px) {
+  body {
+    overflow-x: scroll;
+  }
+}
+@media (max-height: 300px) {
+  body {
+    overflow-y: scroll;
+  }
+}
+@media (max-height: 300px), (max-width: 400px) {
+  #render, .CodeMirror {
+    width: calc(100% - 10px);
+    float: none;
+  }
+}
