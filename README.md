@@ -42,7 +42,22 @@ myDomOutline.stop();
 		<td><b>filter</b></td>
 		<td>A selector that an element should match in order to be outlined and clicked. By default no filter is applied.</td>
 		<td>false</td>
-	</tr>	
+	</tr>
+	<tr>
+		<td><b>border</b></td>
+		<td>A border used as the visual indicator surrounding the element. If false a semi-transparent blue overlay box is used instead (like firebug).</td>
+		<td>false</td>
+	</tr>
+	<tr>
+		<td><b>realtime</b></td>
+		<td>Shows the visual indicator as you hover the mouse over the elements. If false the visual indicator shows when clicking an element (maybe implementing ctrl-left click is better?).</td>
+		<td>false</td>
+	</tr>
+	<tr>
+		<td><b>label</b></td>
+		<td>Shows a label above the visual indicator. The label contains the element's name, id, class name, and dimensions.</td>
+		<td>false</td>
+	</tr>
 </table>
 
 ### Other Notes
