@@ -58,6 +58,11 @@ myDomOutline.stop();
 		<td>Shows a label above the visual indicator. The label contains the element's name, id, class name, and dimensions.</td>
 		<td>false</td>
 	</tr>
+	<tr>
+		<td><b>multiple</b></td>
+		<td>Select multiple elments. Click to select, click again to cancel.</td>
+		<td>false</td>
+	</tr>
 </table>
 
 ### Other Notes
