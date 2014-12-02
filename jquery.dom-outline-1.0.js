@@ -23,16 +23,20 @@ var DomOutline = function(options) {
             filter: options.filter || false,
             border: options.border || false,
             realtime: options.realtime || false,
-            label: options.label || false
+            label: options.label || false,
+            multiple: options.multiple || false,
+            // onSelect: options.onSelect || false,
+            // onCancel: options.onCancel || false
         },
         keyCodes: {
-            BACKSPACE: 8,
-            ESC: 27,
-            DELETE: 46
+            // BACKSPACE: 8,
+            // ESC: 27,
+            // DELETE: 46
         },
         active: false,
         initialized: false,
-        elements: {}
+        element: {},
+        elements: new Array()
     };
 
     function writeStylesheet(css) {
@@ -53,8 +57,17 @@ var DomOutline = function(options) {
                 '.' + self.opts.namespace + ' {' +
                 '    background: #09c;' +
                 '    position: absolute;' +
-                '    z-index: 1000000;' +
+                '    z-index: 999;' +
                 '    pointer-events: none;' +
+                '}' +
+				'.' + self.opts.namespace + '_selected {' +
+                '    background: red;' +
+                '    position: absolute;' +
+                '    z-index: 1000;' +
+                '    pointer-events: none;' +
+                '}' +
+                '.' + self.opts.namespace + '_hidden {' +
+                '    display: none;' +
                 '}' +
                 '.' + self.opts.namespace + '_label {' +
                 '    background: #09c;' +
@@ -64,13 +77,13 @@ var DomOutline = function(options) {
                 '    padding: 4px 6px;' +
                 '    position: absolute;' +
                 '    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);' +
-                '    z-index: 1000001;' +
+                '    z-index: 1001;' +
                 '    pointer-events: none;' +
                 '}' +
                 '.' + self.opts.namespace + '_box {' +
                 '    background: rgba(0, 153, 204, 0.5);' +
                 '    position: absolute;' +
-                '    z-index: 1000000;' +
+                '    z-index: 999;' +
                 '    pointer-events: none;' +
                 '}';
 
@@ -79,20 +92,41 @@ var DomOutline = function(options) {
         }
     }
 
-    function createOutlineElements() {
-        self.elements.label = jQuery('<div></div>').addClass(self.opts.namespace + '_label').appendTo('body');
-        self.elements.top = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
-        self.elements.bottom = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
-        self.elements.left = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
-        self.elements.right = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
+    function createOutlineElements(selected) {
+        var element = {};
+        if (selected) {
+	        element.label = jQuery('<div></div>').addClass(self.opts.namespace + '_label').appendTo('body');
+	        element.top = jQuery('<div></div>').addClass(self.opts.namespace + '_selected').appendTo('body');
+	        element.bottom = jQuery('<div></div>').addClass(self.opts.namespace + '_selected').appendTo('body');
+	        element.left = jQuery('<div></div>').addClass(self.opts.namespace + '_selected').appendTo('body');
+	        element.right = jQuery('<div></div>').addClass(self.opts.namespace + '_selected').appendTo('body');
+        } else {
+	        element.label = jQuery('<div></div>').addClass(self.opts.namespace + '_label').appendTo('body');
+	        element.top = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
+	        element.bottom = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
+	        element.left = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
+	        element.right = jQuery('<div></div>').addClass(self.opts.namespace).appendTo('body');
+        }
 
-        self.elements.box = jQuery('<div>').addClass(self.opts.namespace + '_box').appendTo('body');
+        element.box = jQuery('<div>').addClass(self.opts.namespace + '_box').appendTo('body');
+
+        return element;
     }
 
-    function removeOutlineElements() {
-        jQuery.each(self.elements, function(name, element) {
-            element.remove();
+    function removeOutlineElements(element) {
+        jQuery.each(element, function(name, value) {
+            if (name != "target") {
+                value.remove();
+            }
         });
+    }
+
+    function removeAllOutlineElements() {
+        var element = self.element;
+        while (element != null) {
+            removeOutlineElements(element);
+            element = self.elements.pop();
+        }
     }
 
     function compileLabelText(element, width, height) {
@@ -107,13 +141,89 @@ var DomOutline = function(options) {
     }
 
     function getScrollTop() {
-        if (!self.elements.window) {
-            self.elements.window = jQuery(window);
+        if (!self.window) {
+            self.window = jQuery(window);
         }
-        return self.elements.window.scrollTop();
+        return self.window.scrollTop();
     }
 
-    function updateOutlinePosition(e) {
+    function updateOutlinePositions(target, element) {
+    	if (!target) {
+    		return;
+    	}
+
+    	if (target == pub.element) {
+    		if ($(target).closest("[DomOutline-selected]").length != 0) {
+    			element.top.css({"display":"none"});
+    			element.bottom.css({"display":"none"});
+    			element.left.css({"display":"none"});
+    			element.right.css({"display":"none"});
+    			element.box.css({"display":"none"});
+    			return;
+    		} else {
+    			element.top.css({"display":"block"});
+    			element.bottom.css({"display":"block"});
+    			element.left.css({"display":"block"});
+    			element.right.css({"display":"block"});
+    			element.box.css({"display":"block"});
+	    	}
+    	}
+
+        var b = self.opts.borderWidth;
+        var scroll_top = getScrollTop();
+        var pos = target.getBoundingClientRect();
+        var top = pos.top + scroll_top;
+        var label_text = '';
+        var label_top = 0;
+        var label_left = 0;
+
+        label_text = compileLabelText(target, pos.width, pos.height);
+        target.label = label_text;
+        if (self.opts.label) {
+            label_top = Math.max(0, top - 20 - b, scroll_top);
+            label_left = Math.max(0, pos.left - b);
+            element.label.css({
+                top: label_top,
+                left: label_left
+            }).text(label_text);
+        }
+
+        if (self.opts.border) {
+            element.top.css({
+                top: Math.max(0, top - b),
+                left: pos.left - b,
+                width: pos.width + b,
+                height: b
+            });
+            element.bottom.css({
+                top: top + pos.height,
+                left: pos.left - b,
+                width: pos.width + b,
+                height: b
+            });
+            element.left.css({
+                top: top - b,
+                left: Math.max(0, pos.left - b),
+                width: b,
+                height: pos.height + b
+            });
+            element.right.css({
+                top: top - b,
+                left: pos.left + pos.width,
+                width: b,
+                height: pos.height + (b * 2)
+            });
+        } else {
+            element.box.css({
+                top: pos.top,
+                left: pos.left,
+                width: pos.width,
+                height: pos.height
+            });
+        }
+    }
+
+    function updateAllOutlinePositions(e) {
         if (e.type != 'resize') {
             if (e.target.className && e.target.className.indexOf(self.opts.namespace) !== -1) {
                 return;
@@ -124,63 +234,14 @@ var DomOutline = function(options) {
                 }
             }
             pub.element = e.target;
+            updateOutlinePositions(pub.element, self.element);
         } else {
-            if (!pub.element) {
-                return;
+            if (pub.element) {
+                updateOutlinePositions(pub.element, self.element);
             }
-        }
-
-        var b = self.opts.borderWidth;
-        var scroll_top = getScrollTop();
-        var pos = pub.element.getBoundingClientRect();
-        var top = pos.top + scroll_top;
-        var label_text = '';
-        var label_top = 0;
-        var label_left = 0;
-
-        if (self.opts.label) {
-            label_text = compileLabelText(pub.element, pos.width, pos.height);
-            pub.element.label = label_text;pub.element.label = label_text;
-            label_top = Math.max(0, top - 20 - b, scroll_top);
-            label_left = Math.max(0, pos.left - b);
-            self.elements.label.css({
-                top: label_top,
-                left: label_left
-            }).text(label_text);
-        }
-
-        if (self.opts.border) {
-            self.elements.top.css({
-                top: Math.max(0, top - b),
-                left: pos.left - b,
-                width: pos.width + b,
-                height: b
-            });
-            self.elements.bottom.css({
-                top: top + pos.height,
-                left: pos.left - b,
-                width: pos.width + b,
-                height: b
-            });
-            self.elements.left.css({
-                top: top - b,
-                left: Math.max(0, pos.left - b),
-                width: b,
-                height: pos.height + b
-            });
-            self.elements.right.css({
-                top: top - b,
-                left: pos.left + pos.width,
-                width: b,
-                height: pos.height + (b * 2)
-            });
-        } else {
-            self.elements.box.css({
-                top: pos.top,
-                left: pos.left,
-                width: pos.width,
-                height: pos.height
-            });
+            for (var i in self.elements) {
+                updateOutlinePositions(self.elements[i].target, self.elements[i]);
+            }
         }
     }
 
@@ -200,7 +261,41 @@ var DomOutline = function(options) {
         }
 
         if (!self.opts.realtime) {
-            updateOutlinePosition(e);
+            updateOutlinePositions(pub.element, self.element);
+        }
+
+        if (self.opts.multiple) {
+        	var target = e.target;
+        	var closest = $(target);
+        	if (closest.attr("DomOutline-selected") == undefined) {
+        		closest = $(target).closest("[DomOutline-selected]");
+        	}
+        	if (!closest.attr("DomOutline-selected")) {
+        		$(target).find("[DomOutline-selected]").each(function() {
+        			for (var i in self.elements) {
+        				if (this == self.elements[i].target) {
+        					removeOutlineElements(self.elements[i]);
+        					self.elements.splice(i, 1);
+        					$(this).removeAttr("DomOutline-selected");
+        					break;
+        				}
+        			}
+        		});
+	            element = createOutlineElements(true);
+	            element.target = target;
+	            self.elements.push(element);
+	            updateOutlinePositions(target, element);
+	            $(e.target).attr("DomOutline-selected", true);
+	        } else {
+    			for (var i in self.elements) {
+    				if (closest[0] == self.elements[i].target) {
+    					removeOutlineElements(self.elements[i]);
+    					self.elements.splice(i, 1);
+    					closest.removeAttr("DomOutline-selected");
+    					break;
+    				}
+    			} 
+	        }
         }
 
         self.opts.onClick.call(pub.element, e);
@@ -212,11 +307,11 @@ var DomOutline = function(options) {
         initStylesheet();
         if (self.active !== true) {
             self.active = true;
-            createOutlineElements();
+            self.element = createOutlineElements(false);
             if (self.opts.realtime) {
-                jQuery('body').on('mousemove.' + self.opts.namespace, updateOutlinePosition);
+                jQuery('body').on('mousemove.' + self.opts.namespace, updateAllOutlinePositions);
             }
-            jQuery(window).on('resize.' + self.opts.namespace, updateOutlinePosition);
+            jQuery(window).on('resize.' + self.opts.namespace, updateAllOutlinePositions);
             jQuery('body').on('keyup.' + self.opts.namespace, stopOnEscape);
             if (self.opts.onClick) {
                 setTimeout(function() {
@@ -235,7 +330,7 @@ var DomOutline = function(options) {
 
     pub.stop = function() {
         self.active = false;
-        removeOutlineElements();
+        removeAllOutlineElements();
         jQuery('body').off('mousemove.' + self.opts.namespace)
             .off('keyup.' + self.opts.namespace)
             .off('click.' + self.opts.namespace);
