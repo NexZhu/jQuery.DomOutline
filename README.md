@@ -2,6 +2,8 @@
 
 Firebug/Dev Tools-like DOM outline implementation using jQuery.
 
+This fork additionally support the following options: `border`, `realtime`, `label`, `multiple`
+
 ### Example Usage
 
 ```js
